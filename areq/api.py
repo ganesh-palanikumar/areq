@@ -1,10 +1,17 @@
-from httpx import AsyncClient
+from typing import Any, Optional, Union
+from httpx import AsyncClient, Response as HttpxResponse, URL
+from requests import Response as RequestsResponse
 from .core.httpx2requests import httpx_to_requests_response
+from .models import AreqResponse
 
-async def request(method, url, **kwargs):
+async def request(
+    method: str,
+    url: str,
+    **kwargs: Any
+) -> AreqResponse:
     async with AsyncClient() as client:
-        httpx_response = await client.request(method, url, **kwargs)
-        return httpx_to_requests_response(httpx_response)
+        httpx_response: HttpxResponse = await client.request(method, url, **kwargs)
+        return AreqResponse(httpx_response)
 
 
 async def get(url, params=None, **kwargs):
