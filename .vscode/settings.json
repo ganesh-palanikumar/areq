@@ -7,5 +7,6 @@
     "[python]": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "charliermarsh.ruff"
-    }
+    },
+    "docwriter.style": "Auto-detect"
 }

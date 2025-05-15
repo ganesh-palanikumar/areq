@@ -2,8 +2,8 @@ from requests import Response as RequestsResponse
 from requests.structures import CaseInsensitiveDict
 from httpx import Response as HttpxResponse
 
-class AreqResponse(RequestsResponse):
 
+class AreqResponse(RequestsResponse):
     def __init__(self, httpx_response: HttpxResponse):
         super().__init__()
         self._httpx_response: HttpxResponse = httpx_response
