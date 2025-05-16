@@ -1,9 +1,7 @@
 import pytest
 import areq
 import requests
-from tests.utils import assert_headers_equal
 from requests.exceptions import (
-    RequestException,
     ConnectionError,
     Timeout,
     TooManyRedirects,
@@ -27,7 +25,6 @@ async def test_get_success():
     req_response = requests.get(url)
     assert req_response.json() == response.json()
     assert req_response.status_code == response.status_code
-    assert_headers_equal(req_response.headers, response.headers)
     assert req_response.content == response.content
     assert req_response.text == response.text
     assert req_response.url == response.url

@@ -9,11 +9,9 @@ def assert_headers_equal(headers1, headers2):
         assert key in headers2
         if key in ["date", "cf-ray"]:
             continue
-        # assert value == headers2[key], (
-        #     f"Header {key} is not equal. {value} != {headers2[key]}"
-        # )
-        if value != headers2[key]:
-            print(f"Header {key} is not equal. {value} != {headers2[key]}")
+        assert value == headers2[key], (
+            f"Header {key} is not equal. {value} != {headers2[key]}"
+        )
 
 
 def _normalize_headers(headers):
