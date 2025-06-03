@@ -8,5 +8,10 @@
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
-    "docwriter.style": "Auto-detect"
+    "docwriter.style": "Auto-detect",
+    "cursorpyright.analysis.autoImportCompletions": true,
+    "cursorpyright.analysis.extraPaths": [
+        "./areq"
+    ],
+    "cursorpyright.analysis.typeCheckingMode": "basic"
 }
