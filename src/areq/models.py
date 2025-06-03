@@ -6,17 +6,16 @@ from httpx import (
     Headers as HttpxHeaders,
 )
 from urllib3 import HTTPResponse, HTTPHeaderDict
+from typing import Optional
 
 
 class AreqResponse(RequestsResponse):
-    def __new__(cls, httpx_response: HttpxResponse | None = None):
-        if not httpx_response:
-            return None
+    def __new__(cls, httpx_response: HttpxResponse):
         return super().__new__(cls)
 
-    def __init__(self, httpx_response: HttpxResponse | None = None):
-        if not httpx_response:
-            return
+    def __init__(self, httpx_response: HttpxResponse):
+        if httpx_response is None:
+            raise ValueError("httpx_response cannot be None")
 
         super().__init__()
         self._httpx_response: HttpxResponse = httpx_response
@@ -40,14 +39,12 @@ class AreqResponse(RequestsResponse):
 
 
 class AreqRequest(RequestsRequest):
-    def __new__(cls, httpx_request: HttpxRequest | None = None):
-        if not httpx_request:
-            return None
+    def __new__(cls, httpx_request: HttpxRequest):
         return super().__new__(cls)
 
-    def __init__(self, httpx_request: HttpxRequest | None = None):
-        if not httpx_request:
-            return
+    def __init__(self, httpx_request: HttpxRequest):
+        if httpx_request is None:
+            raise ValueError("httpx_request cannot be None")
 
         super().__init__()
         self._httpx_request: HttpxRequest = httpx_request
@@ -59,3 +56,27 @@ class AreqRequest(RequestsRequest):
     @property
     def httpx_request(self) -> HttpxRequest:
         return self._httpx_request
+
+
+def create_areq_response(
+    httpx_response: Optional[HttpxResponse] = None,
+) -> Optional[AreqResponse]:
+    """
+    Factory function to create an AreqResponse from an httpx response.
+    Returns None if httpx_response is None, otherwise returns an AreqResponse instance.
+    """
+    if httpx_response is None:
+        return None
+    return AreqResponse(httpx_response)
+
+
+def create_areq_request(
+    httpx_request: Optional[HttpxRequest] = None,
+) -> Optional[AreqRequest]:
+    """
+    Factory function to create an AreqRequest from an httpx request.
+    Returns None if httpx_request is None, otherwise returns an AreqRequest instance.
+    """
+    if httpx_request is None:
+        return None
+    return AreqRequest(httpx_request)
