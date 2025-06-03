@@ -96,49 +96,46 @@ class AreqTimeout(AreqException, requests.exceptions.Timeout):
 class AreqConnectTimeout(
     AreqTimeout, AreqConnectionError, requests.exceptions.ConnectTimeout
 ):
-    # requests.ConnectTimeout inherits from Timeout and ConnectionError.
-    # AreqTimeout and AreqConnectionError both inherit AreqException.
-    # We need to manage the __init__ chain carefully.
+    """
+    Represents a connection timeout error in areq.
+
+    This class uses multiple inheritance to maintain compatibility with both areq's
+    exception hierarchy and requests' exception hierarchy. The inheritance chain is:
+
+    AreqConnectTimeout
+    ├── AreqTimeout (areq's timeout base)
+    │   └── AreqException (areq's base)
+    │       └── requests.RequestException
+    ├── AreqConnectionError (areq's connection error base)
+    │   └── AreqException (areq's base)
+    │       └── requests.RequestException
+    └── requests.ConnectTimeout (requests' connect timeout)
+        ├── requests.Timeout
+        │   └── requests.RequestException
+        └── requests.ConnectionError
+            └── requests.RequestException
+
+    The MRO ensures that:
+    1. AreqException is initialized first (via AreqTimeout or AreqConnectionError)
+    2. requests.ConnectTimeout is initialized next
+    3. Each base class's __init__ is called exactly once
+    4. The final exception type is compatible with both areq and requests
+
+    This design allows areq exceptions to be caught by both areq-specific and
+    requests-specific exception handlers, making it a true drop-in replacement.
+    """
+
     def __init__(self, error: httpx.ConnectTimeout | httpx.PoolTimeout):
-        # Explicitly call AreqException.__init__ once.
-        # Then call requests.exceptions.ConnectTimeout.__init__
-        AreqException.__init__(self, error, str(error))  # Pass message explicitly
-        # requests.ConnectTimeout will call its parents (Timeout, ConnectionError)
-        # We don't call AreqTimeout or AreqConnectionError's __init__ directly here
-        # to avoid multiple AreqException initializations or MRO complexities.
-        # Instead, we rely on the fact that requests.ConnectTimeout will initialize
-        # its requests-side parents. Our AreqException is a parallel base.
-        # The key is that AreqException sets up self.underlying_exception and self.request.
-        # And the final exception type is requests.exceptions.ConnectTimeout.
+        """
+        Initialize the AreqConnectTimeout exception.
 
-        # Alternative: Let super() handle it if MRO is set up for AreqException first.
-        # super(AreqConnectTimeout, self).__init__(error)
-        # This would call AreqTimeout.__init__ -> AreqException.__init__
-        # Then requests.ConnectTimeout needs to be initialized. This is tricky.
-
-        # Simplest for multiple inheritance with a common custom base:
-        # Initialize the custom base directly, then the primary library base.
-        # AreqException.__init__(self, error) # Already done by AreqTimeout or AreqConnectionError if we used super()
-
-        # Let's ensure AreqException is initialized, then init requests.exceptions.ConnectTimeout
-        # The AreqException.__init__ sets self.request.
-        # The requests.exceptions.ConnectTimeout.__init__ takes the message.
-        # The *args for AreqException in this case will be (str(error),)
-        # The **kwargs for AreqException will be request=self.request (set by AreqException itself)
-
-        # Call chain: AreqConnectTimeout -> AreqTimeout -> AreqException -> requests.RequestException
-        #             AreqConnectTimeout -> AreqConnectionError -> (also AreqException)
-        #             AreqConnectTimeout -> requests.ConnectTimeout -> requests.Timeout -> requests.RequestException
-        #                                                        -> requests.ConnectionError -> (also requests.RequestException)
-        # To avoid AreqException being called multiple times with different effects:
-        AreqException.__init__(
-            self, error, str(error)
-        )  # Call the base AreqException directly
-        # Now initialize the requests.exceptions.ConnectTimeout part
-        requests.exceptions.ConnectTimeout.__init__(
-            self, str(error), request=self.request
-        )
-        # self.__cause__ is handled by AreqException
+        Args:
+            error: The underlying httpx timeout error.
+        """
+        # Initialize AreqException first with the error object
+        AreqException.__init__(self, error)
+        # Then initialize requests.ConnectTimeout with just the message
+        requests.exceptions.ConnectTimeout.__init__(self, str(error))
 
 
 class AreqReadTimeout(AreqTimeout, requests.exceptions.ReadTimeout):
