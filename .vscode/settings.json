@@ -2,11 +2,22 @@
     "python.languageServer": "Pylance",
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.autoImportCompletions": true,
-    "python.analysis.extraPaths": ["./areq"],
+    "python.analysis.extraPaths": [
+        "./areq"
+    ],
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "cursorpyright.analysis.autoImportCompletions": true,
+    "cursorpyright.analysis.extraPaths": [
+        "./areq"
+    ],
+    "cursorpyright.analysis.typeCheckingMode": "basic",
     "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
-        "editor.defaultFormatter": "charliermarsh.ruff"
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        }
     },
-    "docwriter.style": "Auto-detect"
+    "ruff.enable": true
 }
