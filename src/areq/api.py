@@ -1,22 +1,17 @@
 from typing import Any
 
-from httpx import AsyncClient, HTTPError
+from httpx import AsyncClient
 from httpx import Response as HttpxResponse
 
-from .exceptions import AreqException
 from .models import AreqResponse, create_areq_response
 
 
 async def request(method: str, url: str, **kwargs: Any) -> AreqResponse:
     async with AsyncClient() as client:
         httpx_response: HttpxResponse = await client.request(method, url, **kwargs)
+        assert httpx_response is not None  # httpx client.request() never returns None
         response = create_areq_response(httpx_response)
-        if not response:
-            raise AreqException(
-                HTTPError(
-                    "httpx_response should never be None from a successful request"
-                )
-            )
+        assert response is not None  # create_areq_response never returns None
         return response
 
 
