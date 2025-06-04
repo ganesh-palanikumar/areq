@@ -1,8 +1,34 @@
+from collections import OrderedDict
+from typing import Type, TypeVar, Union
+
 import httpx
 import requests.exceptions
+
 from .models import AreqRequest, AreqResponse, create_areq_request, create_areq_response
 
 SupportedHttpxError = httpx.HTTPError | httpx.InvalidURL
+
+T = TypeVar("T", bound=httpx.HTTPError | httpx.InvalidURL)
+
+ErrorType = Union[
+    httpx.HTTPStatusError,
+    httpx.ConnectTimeout,
+    httpx.ReadTimeout,
+    httpx.WriteTimeout,
+    httpx.PoolTimeout,
+    httpx.TooManyRedirects,
+    httpx.DecodingError,
+    httpx.CookieConflict,
+    httpx.ConnectError,
+    httpx.ReadError,
+    httpx.WriteError,
+    httpx.RemoteProtocolError,
+    httpx.ProtocolError,
+    httpx.NetworkError,
+    httpx.TransportError,
+    httpx.TimeoutException,
+    httpx.InvalidURL,
+]
 
 
 class AreqException(requests.exceptions.RequestException):
@@ -73,6 +99,10 @@ class AreqHTTPError(AreqException, requests.exceptions.HTTPError):
 
 
 class AreqConnectionError(AreqException, requests.exceptions.ConnectionError):
+    """
+    Wraps httpx connection errors, mimicking requests.exceptions.ConnectionError.
+    """
+
     def __init__(
         self,
         error: (
@@ -89,6 +119,10 @@ class AreqConnectionError(AreqException, requests.exceptions.ConnectionError):
 
 
 class AreqTimeout(AreqException, requests.exceptions.Timeout):
+    """
+    Wraps httpx timeout errors, mimicking requests.exceptions.Timeout.
+    """
+
     def __init__(self, error: httpx.TimeoutException):
         super().__init__(error)
 
@@ -106,9 +140,7 @@ class AreqConnectTimeout(
     ├── AreqTimeout (areq's timeout base)
     │   └── AreqException (areq's base)
     │       └── requests.RequestException
-    ├── AreqConnectionError (areq's connection error base)
-    │   └── AreqException (areq's base)
-    │       └── requests.RequestException
+    │       └── requests.ConnectionError
     └── requests.ConnectTimeout (requests' connect timeout)
         ├── requests.Timeout
         │   └── requests.RequestException
@@ -139,11 +171,19 @@ class AreqConnectTimeout(
 
 
 class AreqReadTimeout(AreqTimeout, requests.exceptions.ReadTimeout):
+    """
+    Wraps httpx read timeout errors, mimicking requests.exceptions.ReadTimeout.
+    """
+
     def __init__(self, error: httpx.ReadTimeout):
         super().__init__(error)  # AreqTimeout -> AreqException -> requests.Timeout
 
 
 class AreqTooManyRedirects(AreqException, requests.exceptions.TooManyRedirects):
+    """
+    Wraps httpx too many redirects errors, mimicking requests.exceptions.TooManyRedirects.
+    """
+
     response: AreqResponse | None = None  # Can be None
 
     def __init__(self, error: httpx.TooManyRedirects):
@@ -152,12 +192,22 @@ class AreqTooManyRedirects(AreqException, requests.exceptions.TooManyRedirects):
 
 
 class AreqInvalidURL(AreqException, requests.exceptions.InvalidURL):
+    """
+    Wraps httpx invalid url errors, mimicking requests.exceptions.InvalidURL.
+    """
+
     def __init__(self, error: httpx.InvalidURL):
         # InvalidURL is now directly supported by AreqException via SupportedHttpxError
         super().__init__(error)
 
 
 class AreqMissingSchema(AreqInvalidURL, requests.exceptions.MissingSchema):
+    """
+    Wraps httpx missing schema errors, mimicking requests.exceptions.MissingSchema.
+    requests has a separate MissingSchema exception, but httpx bundles it with InvalidURL.
+    The only way we can find if its a missing schema error is to check the message.
+    """
+
     def __init__(self, error: httpx.InvalidURL):
         # Check if it's a missing schema error
         message = str(error).lower()
@@ -170,6 +220,10 @@ class AreqMissingSchema(AreqInvalidURL, requests.exceptions.MissingSchema):
 
 
 class AreqSSLError(AreqConnectionError, requests.exceptions.SSLError):
+    """
+    Wraps httpx ssl errors, mimicking requests.exceptions.SSLError.
+    """
+
     # requests.SSLError inherits ConnectionError
     def __init__(
         self, error: httpx.ConnectError
@@ -180,6 +234,10 @@ class AreqSSLError(AreqConnectionError, requests.exceptions.SSLError):
 
 
 class AreqProxyError(AreqConnectionError, requests.exceptions.ProxyError):
+    """
+    Wraps httpx proxy errors, mimicking requests.exceptions.ProxyError.
+    """
+
     # requests.ProxyError inherits ConnectionError
     def __init__(
         self, error: httpx.ConnectError
@@ -188,6 +246,10 @@ class AreqProxyError(AreqConnectionError, requests.exceptions.ProxyError):
 
 
 class AreqContentDecodingError(AreqException, requests.exceptions.ContentDecodingError):
+    """
+    Wraps httpx content decoding errors, mimicking requests.exceptions.ContentDecodingError.
+    """
+
     def __init__(self, error: httpx.DecodingError):
         # httpx.DecodingError doesn't have a 'response' attribute.
         # requests.ContentDecodingError can take response=, but we'll omit it.
@@ -197,80 +259,90 @@ class AreqContentDecodingError(AreqException, requests.exceptions.ContentDecodin
 # --- Factory Function ---
 
 
+def _convert_httpx_invalid_url_to_areq_exception(
+    error: httpx.InvalidURL,
+) -> AreqException:
+    """
+    Converts an httpx.InvalidURL instance into an appropriate AreqException subclass.
+    """
+    message = str(error).lower()
+    if any(
+        msg in message
+        for msg in ["missing url scheme", "invalid url scheme", "missing schema"]
+    ):
+        return AreqMissingSchema(error)
+    return AreqInvalidURL(error)
+
+
+def _convert_httpx_connect_timeout_to_areq_exception(
+    error: httpx.ConnectError,
+) -> AreqException:
+    """
+    Converts an httpx.ConnectTimeout instance into an appropriate AreqException subclass.
+    """
+    message = str(error).lower()
+    if "ssl" in message or "tls" in message:
+        return AreqSSLError(error)
+    if "proxy" in message:  # Basic heuristic
+        return AreqProxyError(error)
+    return AreqConnectionError(error)
+
+
+mapper = OrderedDict(
+    {
+        # Most specific types first
+        httpx.HTTPStatusError: AreqHTTPError,
+        httpx.ConnectTimeout: AreqConnectTimeout,
+        httpx.ReadTimeout: AreqReadTimeout,
+        httpx.WriteTimeout: AreqTimeout,
+        httpx.PoolTimeout: AreqConnectTimeout,
+        httpx.TooManyRedirects: AreqTooManyRedirects,
+        httpx.DecodingError: AreqContentDecodingError,
+        httpx.CookieConflict: AreqException,
+        # Connection-related errors
+        httpx.ConnectError: _convert_httpx_connect_timeout_to_areq_exception,
+        httpx.ReadError: AreqConnectionError,
+        httpx.WriteError: AreqConnectionError,
+        httpx.RemoteProtocolError: AreqConnectionError,
+        httpx.ProtocolError: AreqConnectionError,
+        httpx.LocalProtocolError: AreqConnectionError,
+        # Network and transport errors
+        httpx.NetworkError: AreqConnectionError,
+        httpx.TransportError: AreqException,
+        # Timeout base class
+        httpx.TimeoutException: AreqTimeout,
+        # URL validation
+        httpx.InvalidURL: _convert_httpx_invalid_url_to_areq_exception,
+    }
+)
+
+
+def is_error_type(
+    error: httpx.HTTPError | httpx.InvalidURL, error_type: Type[T]
+) -> bool:
+    """Type guard to check error type and help type checker understand the type."""
+    return isinstance(error, error_type)
+
+
 def convert_httpx_to_areq_exception(
     error: httpx.HTTPError | httpx.InvalidURL,
 ) -> AreqException:
     """
     Converts an httpx error instance into an appropriate AreqException subclass.
+
+    Args:
+        error: The httpx error to convert
+
+    Returns:
+        An appropriate AreqException subclass instance
+
+    Note:
+        If the error type is not found in the mapper, returns a base AreqException
     """
-    if isinstance(error, httpx.InvalidURL):
-        message = str(error).lower()
-        if any(
-            msg in message
-            for msg in ["missing url scheme", "invalid url scheme", "missing schema"]
-        ):
-            return AreqMissingSchema(error)
-        return AreqInvalidURL(error)
-    if isinstance(error, httpx.HTTPStatusError):
-        return AreqHTTPError(error)
-
-    # Timeout Mappings
-    if isinstance(error, httpx.ConnectTimeout):
-        return AreqConnectTimeout(error)
-    if isinstance(error, httpx.ReadTimeout):
-        return AreqReadTimeout(error)
-    if isinstance(error, httpx.WriteTimeout):  # requests has no specific WriteTimeout
-        return AreqTimeout(error)  # Map to generic AreqTimeout
-    if isinstance(
-        error, httpx.PoolTimeout
-    ):  # Pool timeout is a kind of connect timeout
-        return AreqConnectTimeout(error)  # Map to AreqConnectTimeout
-    if isinstance(error, httpx.TimeoutException):  # Generic base for other timeouts
-        return AreqTimeout(error)
-
-    # Connection / Network Error Mappings (excluding timeouts handled above)
-    if isinstance(error, httpx.ConnectError):
-        message = str(error).lower()
-        if "ssl" in message or "tls" in message:
-            return AreqSSLError(error)
-        if "proxy" in message:  # Basic heuristic
-            return AreqProxyError(error)
-        return AreqConnectionError(error)
-
-    if isinstance(
-        error, (httpx.ReadError, httpx.WriteError)
-    ):  # Non-timeout read/write errors
-        return AreqConnectionError(error)
-
-    if isinstance(
-        error,
-        (httpx.RemoteProtocolError, httpx.ProtocolError, httpx.LocalProtocolError),
-    ):
-        return AreqConnectionError(error)
-
-    # Request Construction / Redirection Mappings
-    if isinstance(error, httpx.TooManyRedirects):
-        return AreqTooManyRedirects(error)
-
-    # Decoding Error Mapping
-    if isinstance(error, httpx.DecodingError):
-        return AreqContentDecodingError(error)
-
-    # Other specific httpx errors without direct common requests equivalents
-    if isinstance(error, httpx.CookieConflict):
-        return AreqException(error)  # Fallback to base AreqException
-
-    # Fallbacks for broader httpx exception types if not caught by specifics
-    if isinstance(
-        error, httpx.NetworkError
-    ):  # Base for ConnectError, ReadError, WriteError
-        return AreqConnectionError(error)
-    if isinstance(
-        error, httpx.TransportError
-    ):  # Base for many, including NetworkError, HTTPStatusError
-        return AreqException(
-            error
-        )  # Use base AreqException for generic transport errors
+    for error_type, converter in mapper.items():
+        if isinstance(error, error_type):
+            # After isinstance check, we know error is of type error_type
+            return converter(error)  # type: ignore[arg-type]
 
     # Absolute fallback for any httpx.HTTPError not specifically mapped
     return AreqException(error)

@@ -1,9 +1,10 @@
-import httpx
 import asyncio
+
+import httpx
 import requests
+from httpx import Response as HttpxResponse
 from requests import Response as RequestsResponse
 from requests.structures import CaseInsensitiveDict
-from httpx import Response as HttpxResponse
 
 
 def httpx_to_requests_response(httpx_response: HttpxResponse) -> RequestsResponse:

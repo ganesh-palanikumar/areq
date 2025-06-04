@@ -1,12 +1,18 @@
-from requests import Response as RequestsResponse, Request as RequestsRequest
-from requests.structures import CaseInsensitiveDict
+from typing import Optional
+
 from httpx import (
-    Response as HttpxResponse,
-    Request as HttpxRequest,
     Headers as HttpxHeaders,
 )
-from urllib3 import HTTPResponse, HTTPHeaderDict
-from typing import Optional
+from httpx import (
+    Request as HttpxRequest,
+)
+from httpx import (
+    Response as HttpxResponse,
+)
+from requests import Request as RequestsRequest
+from requests import Response as RequestsResponse
+from requests.structures import CaseInsensitiveDict
+from urllib3 import HTTPHeaderDict, HTTPResponse
 
 
 class AreqResponse(RequestsResponse):
