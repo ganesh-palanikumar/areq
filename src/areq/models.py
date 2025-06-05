@@ -20,6 +20,12 @@ class AreqResponse(RequestsResponse):
         return super().__new__(cls)
 
     def __init__(self, httpx_response: HttpxResponse):
+        """
+        Initializes an AreqResponse object that wraps an httpx.Response.
+        
+        Raises:
+            ValueError: If httpx_response is None.
+        """
         if httpx_response is None:
             raise ValueError("httpx_response cannot be None")
 
