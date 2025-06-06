@@ -22,7 +22,7 @@ def httpx_to_requests_response(httpx_response: HttpxResponse) -> RequestsRespons
 
 
 async def main():
-    url = "https://httpbin.org/redirect/16"
+    url = "https://httpbin.org/delete"
 
     requests_exc = None
     areq_exc = None
@@ -44,7 +44,7 @@ async def main():
         print(e)
 
     try:
-        areq_response = await areq.get(url, allow_redirects=True)
+        areq_response = await areq.delete(url, allow_redirects=True)
         print(areq_response.text)
     except Exception as e:
         areq_exc = e
