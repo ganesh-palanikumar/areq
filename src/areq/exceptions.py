@@ -28,6 +28,7 @@ ErrorType = Union[
     httpx.TransportError,
     httpx.TimeoutException,
     httpx.InvalidURL,
+    httpx.UnsupportedProtocol,
 ]
 
 
@@ -196,7 +197,7 @@ class AreqInvalidURL(AreqException, requests.exceptions.InvalidURL):
     Wraps httpx invalid url errors, mimicking requests.exceptions.InvalidURL.
     """
 
-    def __init__(self, error: httpx.InvalidURL):
+    def __init__(self, error: httpx.InvalidURL | httpx.UnsupportedProtocol):
         # InvalidURL is now directly supported by AreqException via SupportedHttpxError
         super().__init__(error)
 
@@ -208,14 +209,15 @@ class AreqMissingSchema(AreqInvalidURL, requests.exceptions.MissingSchema):
     The only way we can find if its a missing schema error is to check the message.
     """
 
-    def __init__(self, error: httpx.InvalidURL):
+    def __init__(self, error: httpx.InvalidURL | httpx.UnsupportedProtocol):
         # Check if it's a missing schema error
         message = str(error).lower()
-        if not any(
-            msg in message
-            for msg in ["missing url scheme", "invalid url scheme", "missing schema"]
-        ):
-            raise ValueError("Not a missing schema error")
+        assert any(
+            [
+                message
+                == "request url is missing an 'http://' or 'https://' protocol.",
+            ]
+        )
         super().__init__(error)
 
 
@@ -274,6 +276,18 @@ def _convert_httpx_invalid_url_to_areq_exception(
     return AreqInvalidURL(error)
 
 
+def _convert_httpx_unsupported_protocol_to_areq_exception(
+    error: httpx.UnsupportedProtocol,
+) -> AreqException:
+    """
+    Converts an httpx.UnsupportedProtocol instance into an appropriate AreqException subclass.
+    """
+    message = str(error).lower()
+    if message == "request url is missing an 'http://' or 'https://' protocol.":
+        return AreqMissingSchema(error)
+    return AreqInvalidURL(error)
+
+
 def _convert_httpx_connect_timeout_to_areq_exception(
     error: httpx.ConnectError,
 ) -> AreqException:
@@ -308,6 +322,7 @@ mapper = OrderedDict(
         httpx.LocalProtocolError: AreqConnectionError,
         # Network and transport errors
         httpx.NetworkError: AreqConnectionError,
+        httpx.UnsupportedProtocol: _convert_httpx_unsupported_protocol_to_areq_exception,
         httpx.TransportError: AreqException,
         # Timeout base class
         httpx.TimeoutException: AreqTimeout,

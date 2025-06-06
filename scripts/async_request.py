@@ -6,6 +6,8 @@ from httpx import Response as HttpxResponse
 from requests import Response as RequestsResponse
 from requests.structures import CaseInsensitiveDict
 
+import areq
+
 
 def httpx_to_requests_response(httpx_response: HttpxResponse) -> RequestsResponse:
     requests_response = RequestsResponse()
@@ -20,19 +22,37 @@ def httpx_to_requests_response(httpx_response: HttpxResponse) -> RequestsRespons
 
 
 async def main():
-    url = "not-a-valid-url"
+    url = "https://httpbin.org/redirect/16"
+
+    requests_exc = None
+    areq_exc = None
+    httpx_exc = None
+
     try:
         async with httpx.AsyncClient() as client:
-            async_response = await client.get(url)
+            async_response = await client.get(url, follow_redirects=True)
             print(async_response.text)
     except Exception as e:
+        httpx_exc = e
         print(e)
 
     try:
-        sync_response = requests.get(url)
+        sync_response = requests.get(url, allow_redirects=True)
         print(sync_response.text)
     except Exception as e:
+        requests_exc = e
         print(e)
+
+    try:
+        areq_response = await areq.get(url, allow_redirects=True)
+        print(areq_response.text)
+    except Exception as e:
+        areq_exc = e
+        print(e)
+
+    print("HTTPX exception:", httpx_exc.__class__.__name__)
+    print("Requests exception:", requests_exc.__class__.__name__)
+    print("Areq exception:", areq_exc.__class__.__name__)
 
 
 if __name__ == "__main__":
