@@ -20,6 +20,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
           coverage run -m pytest
           coverage xml
 
