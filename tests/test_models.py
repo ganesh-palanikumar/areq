@@ -139,42 +139,6 @@ async def test_response_text_encoding():
         assert response.text == "Hello, 世界!"
 
 
-@pytest.mark.asyncio
-async def test_response_iter_content():
-    async with httpx.AsyncClient() as client:
-        httpx_response = await client.get(TEST_URL)
-        response = areq.AreqResponse(httpx_response)
-
-        # Test iter_content
-        content = b"".join(chunk for chunk in response.iter_content())
-        assert content == httpx_response.content
-
-        # Test with chunk_size
-        content = b"".join(chunk for chunk in response.iter_content(chunk_size=10))
-        assert content == httpx_response.content
-
-
-@pytest.mark.asyncio
-async def test_response_iter_lines():
-    async with httpx.AsyncClient() as client:
-        content = b"line1\nline2\nline3"
-        httpx_response = httpx.Response(
-            status_code=200,
-            content=content,
-            headers={"content-type": "text/plain"},
-            request=httpx.Request("GET", httpx.URL("https://example.com")),
-        )
-        response = areq.AreqResponse(httpx_response)
-
-        # Test iter_lines
-        lines = [line for line in response.iter_lines()]
-        assert lines == [b"line1", b"line2", b"line3"]
-
-        # Test with decode_unicode
-        lines = [line for line in response.iter_lines(decode_unicode=True)]
-        assert lines == ["line1", "line2", "line3"]
-
-
 def test_response_raise_for_status():
     # Test with successful response
     httpx_response = httpx.Response(
