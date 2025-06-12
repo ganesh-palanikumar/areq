@@ -5,13 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Pytest",
+            "name": "Pytest with Coverage",
             "type": "debugpy",
             "request": "launch",
             "module": "pytest",
             "args": [
+                "--cov=src/areq", // Replace "areq" with your actual module name if different
+                "--cov-report=term-missing",
                 "${workspaceFolder}/tests"
-            ]
+            ],
+            "console": "integratedTerminal"
         },
         {
             "name": "Async Request",

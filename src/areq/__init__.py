@@ -1,5 +1,21 @@
-from .api import delete, get, head, options, patch, post, put
-from .models import AreqRequest, AreqResponse
+from .api import delete, get, head, options, patch, post, put, request
+from .exceptions import (
+    AreqConnectionError,
+    AreqConnectTimeout,
+    AreqContentDecodingError,
+    AreqException,
+    AreqHTTPError,
+    AreqInvalidURL,
+    AreqMissingSchema,
+    AreqProxyError,
+    AreqReadTimeout,
+    AreqSSLError,
+    AreqTimeout,
+    AreqTooManyRedirects,
+    convert_httpx_to_areq_exception,
+    is_error_type,
+)
+from .models import AreqRequest, AreqResponse, create_areq_request, create_areq_response
 
 __all__ = [
     "get",
@@ -9,6 +25,23 @@ __all__ = [
     "put",
     "patch",
     "delete",
+    "request",
     "AreqResponse",
     "AreqRequest",
+    "AreqException",
+    "AreqHTTPError",
+    "AreqConnectionError",
+    "AreqTimeout",
+    "AreqReadTimeout",
+    "AreqConnectTimeout",
+    "AreqContentDecodingError",
+    "AreqInvalidURL",
+    "AreqMissingSchema",
+    "AreqProxyError",
+    "AreqSSLError",
+    "AreqTooManyRedirects",
+    "create_areq_response",
+    "create_areq_request",
+    "is_error_type",
+    "convert_httpx_to_areq_exception",
 ]
