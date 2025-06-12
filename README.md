@@ -1,9 +1,16 @@
 # areq
 
+<p align="center">
+  <img src="https://img.shields.io/badge/pypi%20package-0.0.4-green" />
+  <img src="https://img.shields.io/badge/python-3-blue" />
+  <img src="https://img.shields.io/badge/license-MIT-yellow" />
+  <img src="https://codecov.io/gh/ganesh-palanikumar/areq/branch/main/graph/badge.svg?token=HAX0Z7DGOK" />
+</p>
+<!-- 
 [![PyPI version](https://badge.fury.io/py/areq.svg)](https://badge.fury.io/py/areq)
 [![Python Versions](https://img.shields.io/pypi/pyversions/areq.svg)](https://pypi.org/project/areq/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/github/ganesh-palanikumar/areq/graph/badge.svg?token=HAX0Z7DGOK)](https://codecov.io/github/ganesh-palanikumar/areq)
+[![codecov](https://codecov.io/github/ganesh-palanikumar/areq/graph/badge.svg?token=HAX0Z7DGOK)](https://codecov.io/github/ganesh-palanikumar/areq) -->
 
 areq is an asynchronous drop-in replacement for the popular `requests` library. It provides the same familiar API as `requests` but with async/await support, making it perfect for modern Python applications that need to make HTTP requests efficiently.
 
