@@ -12,7 +12,7 @@ from httpx import (
 from requests import Request as RequestsRequest
 from requests import Response as RequestsResponse
 from requests.structures import CaseInsensitiveDict
-from urllib3 import HTTPHeaderDict, HTTPResponse
+from urllib3 import HTTPResponse
 
 
 class AreqResponse(RequestsResponse):
@@ -33,7 +33,7 @@ class AreqResponse(RequestsResponse):
         self.reason = httpx_response.reason_phrase
         self.raw = HTTPResponse(
             body=httpx_response.content,
-            headers=HTTPHeaderDict(httpx_response.headers),
+            headers=httpx_response.headers,
             status=httpx_response.status_code,
             reason=httpx_response.reason_phrase,
             preload_content=False,
